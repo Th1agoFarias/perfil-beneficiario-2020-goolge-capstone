@@ -15,9 +15,9 @@ colnames(dat)
 
 dat <- rename(dat,
               instituicao = NOME_IES_BOLSA,
-              modalidade = MODALIDADE_ENSINO_BOLSA,
+              modalidade = MODALIDADE,
               curso = NOME_CURSO_BOLSA,
-              turno = NOME_TURNO_CURSO_BOLSA,
+              turno = TURNO,
               sexo = SEXO_BENEFICIARIO,
               raca = RACA_BENEFICIARIO,
               data_nasc = DATA_NASCIMENTO,
@@ -49,12 +49,17 @@ dat$curso <- tolower(dat$curso)
 count_cursos <- dat %>% 
   group_by(turno) %>% 
   summarise(curso_unicos = n_distinct(curso))
+count_cursos <- count_cursos %>%
+  mutate(turno = factor(turno, levels = unique(turno[order(curso_unicos, decreasing = FALSE)])))
  
  turno +scale_fill_manual(values = hcl.colors(n = 5,
-                                              palette = "harmonic"))
+                                              palette = "Dark 2"))
+ 
+
+ 
  
 turno<- ggplot(count_cursos, aes(x = curso_unicos, y = turno, fill = turno)) +
-   geom_bar(stat = "identity", position = "dodge", width = 0.8) + 
+   geom_bar(stat = "identity", position = "dodge", width = 0.6) + 
    theme_minimal() +
    labs(
      title = "Distribuição de Beneficiários por Turno") +
@@ -67,15 +72,17 @@ turno<- ggplot(count_cursos, aes(x = curso_unicos, y = turno, fill = turno)) +
      axis.title.y = element_blank()
    )
  
+library(knitr)
 
-#turno 
+
+#urno mais comun
+kable(count_cursos, caption = "Contagem de Cursos")
+
 
 #modalidade por tipo de bolsa
 
-
 modalidade_bolsa<-ggplot(dat, aes(x = modalidade, fill = tipos_bolsa)) +
   geom_bar(position = "dodge") +
-  scale_fill_manual(values = cores) +
   labs(
     title = "Distribuição de Tipo de Bolsa por Modalidade",
     x = "Modalidade",
@@ -85,7 +92,10 @@ modalidade_bolsa<-ggplot(dat, aes(x = modalidade, fill = tipos_bolsa)) +
   theme(axis.title.y = element_blank())
 
 modalidade_bolsa +scale_fill_manual(values = hcl.colors(n = 4,
-                                               palette = "harmonic"))
+                                               palette = "YlGnBu"))
+
+
+
 
 
 #cursos mais frequentes
@@ -93,85 +103,62 @@ top_cursos <- dat %>%
   count(curso) %>%
   top_n(10, n)
 
-cursos_frequentes<-ggplot(top_cursos, aes(x = reorder(curso, n), y = n)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Cursos mais Frequentes",
-       x = "Curso",
-       ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  theme(
-    axis.title.y = element_blank()
-  )
 
 
 cursos_frequentes +scale_fill_manual(values = hcl.colors(n = 10,
-                                                        palette = "harmonic"))
+                                                        palette = "Emrld"))
 
 
+top_cursos <- top_cursos %>%
+  mutate(curso = factor(curso, levels = curso[order(n, decreasing = TRUE)]))
 
-cursos_frequentes <- ggplot(top_cursos, aes(x = reorder(curso, n), y = n, fill = curso)) +
+cursos_frequentes <- ggplot(top_cursos, aes(x = curso, y = n, fill = curso)) +
   geom_bar(stat = "identity") +
-  labs(title = "Cursos mais Frequentes",
-       x = "Curso") +
+  labs(
+    title = "Cursos mais Frequentes",
+    x = "Curso"
+  ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.title.y = element_blank()) +
-  scale_fill_manual(values = c("red", "blue", "green", "yellow", "orange"))  # Exemplo de cores personalizadas
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.title.y = element_blank()
+  ) +
+  scale_fill_manual(values = hcl.colors(n = 10, palette = "dark2"))+ guides(fill= "none")
+
 
 
 
    
 #distribuiçao por uf
 
-
-uf<-ggplot(dat, aes(x=uf)) +
-  geom_bar(stat = "count", position = "dodge") +
+ggplot(dat, aes(x = uf, fill = uf)) +
+  geom_histogram(stat = "count", position = "dodge") +  # Definindo a cor da borda das barras
   theme_minimal() +
   labs(
     title = "Concentração de Beneficiário por Estado",
     x = "Estado"
   ) +
-  theme(axis.title.y = element_blank())
-
-regiao +scale_fill_manual(values = hcl.colors(n = 28,
-                                                         palette = "TealRose"))
-
-
-
-uf <- ggplot(dat, aes(x = uf, fill=uf)) +
-  geom_bar(stat = "count", position = "dodge") +
-  theme_minimal() +
-  labs(
-    title = "Concentração de Beneficiário por Estado",
-    x = "Estado"
-  ) +
-  theme(axis.title.y = element_blank())
-
-uf + scale_fill_manual(values = hcl.colors(n = 28, palette = "Dark2"))
-
-
-  
+  theme(axis.title.y = element_blank()) +
+  scale_fill_manual(values = hcl.colors(n = 28, palette = "Temps"))+  guides(fill = "none") 
 
 
 #distribuiçao por região 
 
-regiao_por_cuso<-ggplot(dat)+
-  aes(x = fct_rev(fct_infreq(regiao)))+
-  geom_bar(width= 0.7, position = "dodge") +
-  scale_fill_manual(values = pastel) + 
+
+ggplot(dat) +
+  aes(x = fct_rev(fct_infreq(regiao)), fill = regiao) +  # Adicionando fill = regiao
+  geom_bar(width = 0.5, position = "dodge") +
   coord_flip() +
   labs(
     title = "Beneficiários por Região",
     x = "Região",
     y = ""
   ) +
-  theme_minimal()
-
-regiao_por_cuso +scale_fill_manual(values = hcl.colors(n = 5,
-                                              palette = "Dark2"))
+  theme_minimal() +
+  scale_fill_manual(values = hcl.colors(n = 5, palette = "Temps"))+guides(fill= "none")
 
 
+#distribuição por raça
 raca_e_cursos <- dat %>% 
   group_by(raca) %>% 
   summarise(curso_unicos = n_distinct(curso))
@@ -188,14 +175,16 @@ raca_por_curso<-ggplot(raca_e_cursos, aes(x = raca, y = curso_unicos, fill = rac
   theme_minimal()+
   theme(
     axis.title.y = element_blank()
-  )
-
-
+  )+guides(fill= "none")
 
 
 raca_por_curso +scale_fill_manual(values = hcl.colors(n = 6,
-                                                       palette = "Dark2"))
+                                                       palette = "Temps"))
 
+
+
+
+#distruibuição por sexo
 sexo_e_cursos <- dat %>% 
   group_by(sexo) %>% 
   summarise(curso_unicos = n_distinct(curso))
@@ -217,5 +206,56 @@ sexo_por_curso<-ggplot(sexo_e_cursos, aes(x = sexo, y = curso_unicos, fill = sex
 
 
 sexo_por_curso +scale_fill_manual(values = hcl.colors(n = 2,
-                                                      palette = "Dark2"))
+                                                      palette = "Geyser"))
 
+
+top_cursos_sexo <- dat %>%
+  filter(curso %in% top_cursos$curso) %>%
+  group_by(curso, sexo) %>%
+  summarise(n = n()) %>%
+  arrange(curso, sexo) %>%
+  mutate(sexo = factor(sexo, levels = c("M", "F")))
+
+
+labels_1 <- ggplot(top_cursos_sexo, aes(fill = sexo, y = curso, x = n)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(title = "Contagem de Cursos por Sexo",
+       x = "Proporção",
+       y = "Curso") +
+  theme_minimal()
+
+# Adicionando rótulos de dados
+labels_1 + geom_text(aes(label = n),                  
+              position = position_fill(vjust = 0.5), 
+              
+              color = "black",                      
+              size = 3)  
+
+
+top_cursos_raca <- dat %>%
+  filter(curso %in% top_cursos$curso) %>%
+  group_by(curso, raca) %>%
+  summarise(n = n(), na.rm = TRUE) %>%  # Remover valores NA
+  arrange(curso, raca) %>%
+  mutate(raca = factor(raca, levels = c("Amarela", "Branca", "Ind¡gena", "Não Informada", "Parda", "Preta")))
+
+
+
+
+labels <- ggplot(top_cursos_raca, aes(fill = raca, y = curso, x = n)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(title = "Contagem de Cursos por Sexo",
+       x = "Proporção",
+       y = "Curso") +
+  theme_minimal()+
+  
+
+# Adicionando rótulos de dados com proporção ajustada
+labels + geom_text(aes(label = scales::percent(n, accuracy = 0.01)),  # Convertendo para porcentagem com precisão de 0.01
+                   position = position_fill(vjust = 0.5), 
+                   color = "black",                      
+                   size = 3)  # Tamanho dos rótulos
+
+
+unique_racas <- select(dat, unique(raca))
+  print(unique_racas)
